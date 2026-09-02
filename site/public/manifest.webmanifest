@@ -1,0 +1,26 @@
+{
+  "name": "澎湖騎士｜3-Day License Rush",
+  "short_name": "澎湖騎士",
+  "description": "三天完成台灣機車筆試衝刺的離線小遊戲。",
+  "lang": "zh-Hant-TW",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#dff1ed",
+  "theme_color": "#0c5c66",
+  "icons": [
+    {
+      "src": "/art/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/art/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

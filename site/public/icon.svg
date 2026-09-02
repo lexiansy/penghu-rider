@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="澎湖騎士">
+  <rect width="512" height="512" rx="116" fill="#0c5c66"/>
+  <circle cx="398" cy="104" r="48" fill="#f2b66d"/>
+  <path d="M62 368c64-40 125-40 187 0s124 40 201 0v80H62z" fill="#dff1ed" opacity=".94"/>
+  <text x="256" y="318" text-anchor="middle" font-family="system-ui, sans-serif" font-size="252" font-weight="800" fill="#fff">澎</text>
+</svg>
