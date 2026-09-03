@@ -45,6 +45,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="zh-Hant">
       <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
         <link rel="stylesheet" href="/styles.css" />
       </head>
       <body>{children}</body>

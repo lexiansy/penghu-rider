@@ -1,4 +1,4 @@
-const CACHE_NAME = 'penghu-rider-v6';
+const CACHE_NAME = 'penghu-rider-v7';
 const CORE = [
   '/',
   '/styles.css',
