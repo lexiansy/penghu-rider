@@ -1,4 +1,4 @@
-const CACHE_NAME = 'penghu-rider-v3';
+const CACHE_NAME = 'penghu-rider-v4';
 const CORE = [
   '/',
   '/styles.css',
@@ -12,6 +12,7 @@ const CORE = [
   '/art/clear-coast.webp',
   '/art/app-icon-192.png',
   '/art/app-icon-512.png',
+  '/art/lex-yao-fox-logo-512.png',
   '/art/monster-following-distance.webp',
   '/art/monster-intersection.webp',
   '/art/monster-vehicle-check.webp',

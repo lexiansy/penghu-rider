@@ -12,6 +12,7 @@ const art = [
   'clear-coast.webp',
   'app-icon-192.png',
   'app-icon-512.png',
+  'lex-yao-fox-logo-512.png',
   'monster-following-distance.webp',
   'monster-intersection.webp',
   'monster-vehicle-check.webp',
@@ -25,7 +26,7 @@ const art = [
 test('complete Phase 2 art set is present and mobile-sized', () => {
   const sizes = art.map((name) => statSync(resolve('public/art', name)).size);
   assert.ok(sizes.every((size) => size > 1_000));
-  assert.ok(sizes.reduce((total, size) => total + size, 0) < 1_250_000);
+  assert.ok(sizes.reduce((total, size) => total + size, 0) < 1_500_000);
 });
 
 test('every decorative asset is explicitly available offline', () => {

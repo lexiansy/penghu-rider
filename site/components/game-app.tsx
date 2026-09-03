@@ -481,15 +481,18 @@ export function GameApp() {
               </output>
             )}
 
-            <Button
-              className="primary-action"
-              disabled={selected === null && !answered}
-              onClick={advance}
-            >
-              {session.index === sessionQuestions.length - 1 ? (session.kind === 'boss' ? '交卷' : '完成任務') : '下一題'}
-              <ChevronRight />
-            </Button>
+            <div className="question-action">
+              <Button
+                className="primary-action"
+                disabled={selected === null && !answered}
+                onClick={advance}
+              >
+                {session.index === sessionQuestions.length - 1 ? (session.kind === 'boss' ? '交卷' : '完成任務') : '下一題'}
+                <ChevronRight />
+              </Button>
+            </div>
           </article>
+          <p className="question-source-note">題目依交通部公路局目前公開題庫整理</p>
         </section>
       </main>
     );
@@ -654,16 +657,22 @@ export function GameApp() {
   };
 
   return (
-    <main className="app-shell">
+    <main className="app-shell home-shell">
       <div className="ambient-orb ambient-orb-one" />
       <div className="ambient-orb ambient-orb-two" />
       <section className="home-card" aria-labelledby="app-title">
         <header className="brand-row">
-          <div><p className="eyebrow">3-DAY LICENSE RUSH</p><h1 id="app-title">澎湖騎士</h1></div>
           <Image className="brand-mark brand-icon" src={`${ART_ROOT}/app-icon-192.png`} alt="" width={192} height={192} priority unoptimized />
+          <div className="brand-copy">
+            <p className="eyebrow">3-DAY LICENSE RUSH</p>
+            <h1 id="app-title">澎湖騎士</h1>
+            <p className="brand-subtitle">三日公路冒險</p>
+          </div>
+          <span className="brand-stage"><small>JOURNEY</small><strong>DAY {activeDay}</strong></span>
         </header>
 
-        <section className="adventure-map" aria-label="三日澎湖冒險地圖">
+        <div className="home-scroll-region">
+          <section className="adventure-map" aria-label="三日澎湖冒險地圖">
           <Image className="map-art" src={`${ART_ROOT}/adventure-map.webp`} alt="連接海風偵察、弱點洞窟與最終島嶼的澎湖路線" width={720} height={1560} priority unoptimized />
           {[
             ['DAY 1', '海風校準'],
@@ -692,9 +701,9 @@ export function GameApp() {
             unoptimized
           />
           <div className="map-caption"><span className="map-pulse" /> 目前旅程 · DAY {activeDay}</div>
-        </section>
+          </section>
 
-        <article className="mission-card map-mission-card">
+          <article className="mission-card map-mission-card">
           <div className="mission-summary">
             <div>
               <div className="mission-kicker"><Compass /><span>目前任務</span></div>
@@ -711,9 +720,9 @@ export function GameApp() {
               </Button>
             </>
           )}
-        </article>
+          </article>
 
-        <section className="home-actions" aria-label="旅程捷徑">
+          <section className="home-actions" aria-label="旅程捷徑">
           <button className="secondary-action" onClick={() => setScreen('monsters')} type="button">
             <span className="secondary-icon"><BookOpen /></span>
             <span><strong>錯題圖鑑</strong><small>{Object.values(progress.stats).filter((stat) => stat.wrong > 0 && stat.mastery !== 'defeated').length || '還沒有'} 隻待復仇</small></span>
@@ -727,9 +736,17 @@ export function GameApp() {
               <ChevronRight />
             </button>
           )}
-        </section>
-        <p className="source-note">題目依交通部公路局目前公開題庫整理</p>
-        <button className="reset-action" onClick={resetJourney} type="button">重設本機進度</button>
+          </section>
+
+          <footer className="brand-footer">
+            <div className="fox-signature">
+              <span className="fox-glow" aria-hidden="true" />
+              <Image src={`${ART_ROOT}/lex-yao-fox-logo-512.png`} alt="Lexian 與 Yao 的藍光狐狸標誌" width={512} height={512} unoptimized />
+              <span>✦ Created together by Lexian &amp; Yao ✦</span>
+            </div>
+            <button className="reset-action" onClick={resetJourney} type="button">重設本機進度</button>
+          </footer>
+        </div>
       </section>
     </main>
   );
