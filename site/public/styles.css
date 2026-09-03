@@ -1074,7 +1074,11 @@ h1 {
 
 @media (display-mode: standalone) {
   .home-shell,
-  .session-shell { overscroll-behavior: none; }
+  .session-shell {
+    height: 100vh;
+    height: 100lvh;
+    overscroll-behavior: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
