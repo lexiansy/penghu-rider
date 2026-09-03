@@ -51,6 +51,8 @@ button { border: 0; font: inherit; }
   overflow: hidden;
 }
 
+.home-shell { padding-bottom: 0; }
+
 .ambient-orb {
   position: fixed;
   pointer-events: none;
@@ -159,7 +161,7 @@ h1 {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  padding: 0 2px 4px;
+  padding: 0 2px max(12px, env(safe-area-inset-bottom));
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
@@ -508,33 +510,32 @@ h1 {
   isolation: isolate;
 }
 
-.fox-signature::before {
-  position: absolute;
-  inset: 2px -10px;
-  z-index: -2;
-  border-radius: 999px;
-  background: radial-gradient(ellipse at center, rgba(238,247,255,.94) 0%, rgba(205,229,251,.55) 43%, rgba(176,215,247,0) 76%);
-  filter: blur(4px);
-  content: '';
-}
-
 .fox-glow {
   position: absolute;
-  left: 7px;
-  z-index: -1;
-  width: 40px;
-  height: 40px;
+  left: 9px;
+  z-index: 0;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: rgba(115,194,255,.3);
-  box-shadow: 0 0 22px rgba(58,159,235,.48), 0 0 38px rgba(118,201,255,.26);
-  filter: blur(5px);
+  background: rgba(115,194,255,.34);
+  box-shadow: 0 0 14px rgba(58,159,235,.5), 0 0 24px rgba(118,201,255,.28);
+  filter: blur(3px);
 }
 
 .fox-signature img {
+  position: relative;
+  z-index: 1;
   width: 34px;
   height: 34px;
   object-fit: contain;
   filter: drop-shadow(0 3px 4px rgba(21,55,60,.12));
+}
+
+.fox-signature > span:last-child {
+  position: relative;
+  z-index: 1;
+  filter: none;
+  text-shadow: none;
 }
 
 .reset-action {
@@ -1031,7 +1032,7 @@ h1 {
   .option { font-size: 16px; }
   .question-images.image-grid { grid-template-columns: 1fr; }
   .app-shell { padding-top: max(18px, env(safe-area-inset-top)); }
-  .home-shell, .session-shell { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .session-shell { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
   .brand-row { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; margin-bottom: 10px; }
   .brand-mark { width: 48px; height: 48px; border-radius: 15px; }
   .brand-copy h1 { font-size: 29px; }
