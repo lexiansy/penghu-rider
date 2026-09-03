@@ -17,7 +17,6 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: '澎湖騎士',
-    statusBarStyle: 'black-translucent',
   },
   openGraph: {
     title: '澎湖騎士｜3-Day License Rush',
@@ -46,6 +45,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="zh-Hant">
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="stylesheet" href="/styles.css" />
       </head>
       <body>{children}</body>
