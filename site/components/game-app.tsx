@@ -24,6 +24,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   bossScore,
+  clearSession,
   isClear,
   makeBossExam,
   makeDiagnostic,
@@ -33,7 +34,10 @@ import {
   recordAnswer,
   restoreProgress,
   serializeProgress,
+  sessionScope,
+  storeSession,
   STORAGE_KEY,
+  updateSession,
   weakCategories,
 } from '@/lib/game.mjs';
 
@@ -61,6 +65,7 @@ type Dataset = {
 };
 
 type SessionKind = 'diagnostic' | 'targeted' | 'boss' | 'revenge' | 'review' | 'monster';
+type SessionScope = 'journey' | 'side';
 type AppScreen = 'home' | 'session' | 'result' | 'monsters' | 'boss-intro';
 
 type QuestionStat = { attempts: number; wrong: number; streak: number; mastery: 'learning' | 'monster' | 'defeated' };
@@ -85,7 +90,8 @@ type ProgressState = {
   completedDays: number[];
   stats: Record<string, QuestionStat>;
   categoryStats: Record<string, CategoryStat>;
-  session: GameSession | null;
+  journeySession: GameSession | null;
+  sideSession: GameSession | null;
   lastBossMisses: string[];
   bossRetryAvailable: boolean;
   clear: boolean;
@@ -142,6 +148,7 @@ export function GameApp() {
     return restoreProgress(window.localStorage.getItem(STORAGE_KEY)) as ProgressState;
   });
   const [screen, setScreen] = useState<AppScreen>('home');
+  const [currentSessionScope, setCurrentSessionScope] = useState<SessionScope | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
   const [timeLeft, setTimeLeft] = useState(30 * 60);
@@ -174,7 +181,12 @@ export function GameApp() {
     () => new Map(dataset?.questions.map((question) => [question.id, question]) ?? []),
     [dataset],
   );
-  const session = progress.session;
+  const session = currentSessionScope === 'journey'
+    ? progress.journeySession
+    : currentSessionScope === 'side'
+      ? progress.sideSession
+      : null;
+  const journeySession = progress.journeySession;
   const sessionQuestions: Question[] = session?.ids
     .map((id: string) => questionMap.get(id))
     .filter((question: Question | undefined): question is Question => Boolean(question)) ?? [];
@@ -211,17 +223,18 @@ export function GameApp() {
     }
     if (!questions && kind === 'review') questions = makeTargetedSet(dataset.questions, progress, 10, seed);
     if (!questions) return;
+    const seedSession: GameSession = {
+      kind,
+      ids: questions.map((question) => question.id),
+      index: 0,
+      answers: {},
+      startedAt: kind === 'boss' ? Date.now() : null,
+    };
     setProgress((current) => ({
-      ...current,
-      session: {
-        kind,
-        ids: questions.map((question) => question.id),
-        index: 0,
-        answers: {},
-        startedAt: kind === 'boss' ? Date.now() : null,
-      },
+      ...storeSession(current, seedSession),
       lastResult: null,
     }));
+    setCurrentSessionScope(sessionScope(kind) as SessionScope);
     setSelected(null);
     setScreen('session');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -251,9 +264,10 @@ export function GameApp() {
         execute(input: unknown) {
           const mode = (input as { mode?: string })?.mode;
           if (mode !== 'current' && mode !== 'review') throw new Error('mode 必須是 current 或 review');
-          if (mode === 'current' && progress.session) {
+          if (mode === 'current' && progress.journeySession) {
+            setCurrentSessionScope('journey');
             setScreen('session');
-            return { status: 'resumed', kind: progress.session.kind };
+            return { status: 'resumed', kind: progress.journeySession.kind };
           }
           const kind = mode === 'review' ? 'review' : currentKind;
           startSession(kind);
@@ -264,10 +278,13 @@ export function GameApp() {
       return;
     }
     return () => lifecycle.abort();
-  }, [dataset, progress.activeDay, progress.session, startSession]);
+  }, [dataset, progress.activeDay, progress.journeySession, startSession]);
 
   const completeLearningSession = (nextProgress: ProgressState) => {
-    const activeSession = nextProgress.session;
+    if (!currentSessionScope) return;
+    const activeSession = currentSessionScope === 'journey'
+      ? nextProgress.journeySession
+      : nextProgress.sideSession;
     if (!activeSession) return;
     const kind = activeSession.kind;
     const answers = activeSession.answers;
@@ -286,13 +303,13 @@ export function GameApp() {
     }
     if (kind === 'revenge') bossRetryAvailable = true;
     setProgress({
-      ...nextProgress,
+      ...clearSession(nextProgress, currentSessionScope),
       activeDay,
       completedDays,
       bossRetryAvailable,
-      session: null,
       lastResult: result,
     });
+    setCurrentSessionScope(null);
     setScreen('result');
   };
 
@@ -312,15 +329,15 @@ export function GameApp() {
     const completedDays = [...next.completedDays];
     if (cleared && !completedDays.includes(3)) completedDays.push(3);
     setProgress({
-      ...next,
+      ...clearSession(next, 'journey'),
       activeDay: 3,
       completedDays,
-      session: null,
       lastBossMisses: misses,
       bossRetryAvailable: false,
       clear: cleared,
       lastResult: { kind: 'boss', correct, total: 50, score, cleared },
     });
+    setCurrentSessionScope(null);
     setScreen('result');
   };
 
@@ -330,15 +347,11 @@ export function GameApp() {
     if (!immediate) return;
     setProgress((current) => {
       let next = recordAnswer(current, currentQuestion, optionIndex === currentQuestion.answerIndex) as ProgressState;
-      if (!next.session) return current;
-      const activeSession = next.session;
-      next = {
-        ...next,
-        session: {
-          ...activeSession,
-          answers: { ...activeSession.answers, [currentQuestion.id]: optionIndex },
-        },
-      };
+      if (!currentSessionScope) return current;
+      next = updateSession(next, currentSessionScope, (activeSession: GameSession) => ({
+        ...activeSession,
+        answers: { ...activeSession.answers, [currentQuestion.id]: optionIndex },
+      })) as ProgressState;
       return next;
     });
   };
@@ -350,27 +363,40 @@ export function GameApp() {
       const answers = { ...session.answers, [currentQuestion.id]: selected };
       if (isLast) return completeBoss(answers);
       setSelected(null);
-      setProgress((current) => current.session ? ({
-        ...current,
-        session: { ...current.session, answers, index: current.session.index + 1 },
-      }) : current);
+      setProgress((current) => currentSessionScope ? updateSession(
+        current,
+        currentSessionScope,
+        (activeSession: GameSession) => ({ ...activeSession, answers, index: activeSession.index + 1 }),
+      ) as ProgressState : current);
       return;
     }
     if (isLast) return completeLearningSession(progress);
     setSelected(null);
-    setProgress((current) => current.session ? ({
-      ...current,
-      session: { ...current.session, index: current.session.index + 1 },
-    }) : current);
+    setProgress((current) => currentSessionScope ? updateSession(
+      current,
+      currentSessionScope,
+      (activeSession: GameSession) => ({ ...activeSession, index: activeSession.index + 1 }),
+    ) as ProgressState : current);
   };
 
   const continueCurrent = () => {
-    if (!progress.session) return;
+    if (!progress.journeySession) return;
+    setCurrentSessionScope('journey');
     setScreen('session');
+  };
+
+  const leaveSession = () => {
+    if (currentSessionScope === 'side') {
+      setProgress((current) => clearSession(current, 'side') as ProgressState);
+    }
+    setCurrentSessionScope(null);
+    setSelected(null);
+    setScreen('home');
   };
 
   const resetJourney = () => {
     setProgress(makeInitialProgress());
+    setCurrentSessionScope(null);
     setScreen('home');
   };
 
@@ -389,7 +415,7 @@ export function GameApp() {
       <main className={`app-shell session-shell ${session.kind === 'boss' ? 'is-boss-session' : ''}`}>
         <section className="game-panel">
           <header className="session-header">
-            <Button className="icon-action" variant="ghost" onClick={() => setScreen('home')} aria-label="返回首頁">
+            <Button className="icon-action" variant="ghost" onClick={leaveSession} aria-label="返回首頁">
               <ArrowLeft />
             </Button>
             <div>
@@ -426,7 +452,13 @@ export function GameApp() {
             {currentQuestion.media?.kind === 'image' && (
               <div className={`question-images ${currentQuestion.media.src.length > 1 ? 'image-grid' : ''}`}>
                 {currentQuestion.media.src.map((src) => (
-                  <Image src={src} alt="官方題目圖示" width={1200} height={900} unoptimized key={src} />
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    className="question-image"
+                    src={src}
+                    alt="官方題目圖示"
+                    key={src}
+                  />
                 ))}
               </div>
             )}
@@ -638,14 +670,13 @@ export function GameApp() {
   }
 
   const activeDay = progress.clear ? 3 : progress.activeDay;
-  const activeSession = progress.session;
-  const hasSession = Boolean(activeSession);
+  const hasSession = Boolean(journeySession);
   const mission = activeDay === 1
     ? { title: '先確認你的道路直覺', copy: '一輪精簡診斷，找出接下來兩天最值得追的弱點。', kind: 'diagnostic' as const }
     : activeDay === 2
       ? { title: '追擊最容易失手的路段', copy: '錯題、低正確率與數字規則會優先出現。', kind: 'targeted' as const }
       : { title: progress.bossRetryAvailable ? 'Boss 已可再次挑戰' : '50 題 Boss Rush', copy: '10 題影片、5 題情境、35 題一般題；90 分才算 CLEAR。', kind: 'boss' as const };
-  const remaining = activeSession ? activeSession.ids.length - activeSession.index : missionSizes[activeDay];
+  const remaining = journeySession ? journeySession.ids.length - journeySession.index : missionSizes[activeDay];
   const launchMission = () => {
     if (hasSession) return continueCurrent();
     if (activeDay === 3) {

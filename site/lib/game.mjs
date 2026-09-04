@@ -1,5 +1,7 @@
 export const STORAGE_KEY = 'penghu-rider-progress-v1';
 export const CLEAR_SCORE = 90;
+export const JOURNEY_SESSION_KINDS = ['diagnostic', 'targeted', 'boss', 'revenge'];
+export const SIDE_SESSION_KINDS = ['monster', 'review'];
 
 export function makeInitialProgress() {
   return {
@@ -8,7 +10,8 @@ export function makeInitialProgress() {
     completedDays: [],
     stats: {},
     categoryStats: {},
-    session: null,
+    journeySession: null,
+    sideSession: null,
     lastBossMisses: [],
     bossRetryAvailable: false,
     clear: false,
@@ -26,10 +29,53 @@ export function restoreProgress(serialized) {
     if (value?.version !== 1 || typeof value?.activeDay !== 'number') {
       return makeInitialProgress();
     }
-    return { ...makeInitialProgress(), ...value };
+    const restored = { ...makeInitialProgress(), ...value };
+    const legacySession = value.session;
+    const legacyJourney = value.activeSession;
+
+    restored.journeySession = value.journeySession
+      ?? (isJourneySession(legacySession) ? legacySession : null)
+      ?? (isJourneySession(legacyJourney) ? legacyJourney : null);
+    restored.sideSession = value.sideSession
+      ?? (isSideSession(legacySession) ? legacySession : null);
+
+    delete restored.session;
+    delete restored.activeSession;
+    return restored;
   } catch {
     return makeInitialProgress();
   }
+}
+
+export function sessionScope(kind) {
+  if (SIDE_SESSION_KINDS.includes(kind)) return 'side';
+  if (JOURNEY_SESSION_KINDS.includes(kind)) return 'journey';
+  throw new Error(`Unknown session kind: ${kind}`);
+}
+
+export function isJourneySession(session) {
+  return Boolean(session && JOURNEY_SESSION_KINDS.includes(session.kind));
+}
+
+export function isSideSession(session) {
+  return Boolean(session && SIDE_SESSION_KINDS.includes(session.kind));
+}
+
+export function storeSession(progress, session) {
+  const key = sessionScope(session.kind) === 'journey' ? 'journeySession' : 'sideSession';
+  return { ...progress, [key]: session };
+}
+
+export function updateSession(progress, scope, updater) {
+  const key = scope === 'journey' ? 'journeySession' : 'sideSession';
+  const current = progress[key];
+  if (!current) return progress;
+  return { ...progress, [key]: updater(current) };
+}
+
+export function clearSession(progress, scope) {
+  const key = scope === 'journey' ? 'journeySession' : 'sideSession';
+  return { ...progress, [key]: null };
 }
 
 export function seededRandom(seed = 1) {
